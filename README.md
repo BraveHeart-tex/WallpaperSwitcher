@@ -4,6 +4,12 @@ WallpaperSwitcher is a small macOS menu bar app I built for my own personal need
 
 The app runs as an agent-style menu bar utility with no Dock icon. It watches for macOS appearance changes, applies the next wallpaper from the matching pool, and can rotate wallpapers on a schedule.
 
+## Showcase
+
+![WallpaperSwitcher switching wallpapers from the menu bar](showcase.gif)
+
+![WallpaperSwitcher settings and menu bar preview](showcase.avif)
+
 ## Features
 
 - Menu bar app with no Dock icon
