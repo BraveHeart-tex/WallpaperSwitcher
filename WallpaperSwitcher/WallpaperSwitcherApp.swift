@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appearanceMonitor = AppearanceMonitor { isDarkMode in
             let appearance = isDarkMode ? "dark" : "light"
             print("Appearance changed to: \(appearance)")
+            WallpaperCoordinator.shared.applyWallpaper(isDark: isDarkMode)
         }
     }
 }
