@@ -13,9 +13,11 @@ private extension Notification.Name {
 }
 
 final class AppearanceMonitor: NSObject, ObservableObject {
+    static let shared = AppearanceMonitor()
+
     @Published private(set) var isDarkMode: Bool
 
-    private let onChange: (Bool) -> Void
+    private var onChange: (Bool) -> Void
 
     init(onChange: @escaping (Bool) -> Void = { _ in }) {
         isDarkMode = Self.resolveIsDarkMode()
@@ -38,6 +40,10 @@ final class AppearanceMonitor: NSObject, ObservableObject {
             name: .appleInterfaceThemeChanged,
             object: nil
         )
+    }
+
+    func setOnChange(_ onChange: @escaping (Bool) -> Void) {
+        self.onChange = onChange
     }
 
     @objc private func appearanceDidChange(_ notification: Notification) {

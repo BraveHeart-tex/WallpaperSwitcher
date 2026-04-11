@@ -6,9 +6,11 @@
 //
 
 import AppKit
+import SwiftUI
 
 final class MenuBarController: NSObject {
     private let statusItem: NSStatusItem
+    private var settingsWindow: NSWindow?
 
     override init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -33,8 +35,6 @@ final class MenuBarController: NSObject {
 
     private func makeMenu() -> NSMenu {
         let menu = NSMenu()
-        
-
 
         menu.addItem(NSMenuItem(
             title: "Set wallpaper now",
@@ -58,11 +58,28 @@ final class MenuBarController: NSObject {
     }
 
     @objc private func setWallpaperNow() {
-        // Wallpaper switching will be wired up here.
+        WallpaperCoordinator.shared.applyWallpaper(isDark: AppearanceMonitor.shared.isDarkMode)
     }
 
     @objc private func openPreferences() {
-        // Preferences UI will be wired up here.
+        if let settingsWindow {
+            settingsWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let hostingController = NSHostingController(rootView: SettingsView())
+        let window = NSWindow(contentViewController: hostingController)
+        window.title = "Preferences"
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.setContentSize(NSSize(width: 760, height: 480))
+        window.minSize = NSSize(width: 600, height: 400)
+        window.isReleasedWhenClosed = false
+        window.center()
+
+        settingsWindow = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc private func quit() {

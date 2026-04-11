@@ -13,7 +13,7 @@ struct WallpaperSwitcherApp: App {
 
     var body: some Scene {
         Settings {
-            EmptyView()
+            SettingsView()
         }
     }
 }
@@ -24,10 +24,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         menuBarController = MenuBarController()
-        appearanceMonitor = AppearanceMonitor { isDarkMode in
+        appearanceMonitor = AppearanceMonitor.shared
+        appearanceMonitor?.setOnChange { isDarkMode in
             let appearance = isDarkMode ? "dark" : "light"
             print("Appearance changed to: \(appearance)")
             WallpaperCoordinator.shared.applyWallpaper(isDark: isDarkMode)
         }
+
+        WallpaperCoordinator.shared.applyWallpaper(isDark: AppearanceMonitor.shared.isDarkMode)
     }
 }

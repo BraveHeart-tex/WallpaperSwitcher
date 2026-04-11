@@ -8,6 +8,43 @@
 import AppKit
 import SQLite3
 
+enum WallpaperRotationInterval: String, CaseIterable, Identifiable {
+    case thirtyMinutes
+    case oneHour
+    case threeHours
+    case onLoginOnly
+
+    var id: String {
+        rawValue
+    }
+
+    var title: String {
+        switch self {
+        case .thirtyMinutes:
+            return "Every 30 minutes"
+        case .oneHour:
+            return "1 hour"
+        case .threeHours:
+            return "3 hours"
+        case .onLoginOnly:
+            return "On login only"
+        }
+    }
+
+    fileprivate var timeInterval: TimeInterval? {
+        switch self {
+        case .thirtyMinutes:
+            return 30 * 60
+        case .oneHour:
+            return 60 * 60
+        case .threeHours:
+            return 3 * 60 * 60
+        case .onLoginOnly:
+            return nil
+        }
+    }
+}
+
 final class WallpaperCoordinator {
     static let shared = WallpaperCoordinator()
 
@@ -37,14 +74,31 @@ final class WallpaperCoordinator {
         }
     }
 
+    var rotateWallpaper: Bool {
+        didSet {
+            persistState()
+            configureRotationTimer()
+        }
+    }
+
+    var rotationInterval: WallpaperRotationInterval {
+        didSet {
+            persistState()
+            configureRotationTimer()
+        }
+    }
+
     private let defaults: UserDefaults
     private let dockDesktopPictureDatabaseURL: URL
+    private var rotationTimer: Timer?
 
     private enum DefaultsKey {
         static let lightWallpapers = "WallpaperCoordinator.lightWallpapers"
         static let darkWallpapers = "WallpaperCoordinator.darkWallpapers"
         static let lightWallpaperIndex = "WallpaperCoordinator.lightWallpaperIndex"
         static let darkWallpaperIndex = "WallpaperCoordinator.darkWallpaperIndex"
+        static let rotateWallpaper = "WallpaperCoordinator.rotateWallpaper"
+        static let rotationInterval = "WallpaperCoordinator.rotationInterval"
     }
 
     private init(defaults: UserDefaults = .standard) {
@@ -56,9 +110,13 @@ final class WallpaperCoordinator {
         darkWallpapers = Self.loadURLs(forKey: DefaultsKey.darkWallpapers, from: defaults)
         lightWallpaperIndex = defaults.integer(forKey: DefaultsKey.lightWallpaperIndex)
         darkWallpaperIndex = defaults.integer(forKey: DefaultsKey.darkWallpaperIndex)
+        rotateWallpaper = defaults.bool(forKey: DefaultsKey.rotateWallpaper)
+        rotationInterval = defaults.string(forKey: DefaultsKey.rotationInterval)
+            .flatMap(WallpaperRotationInterval.init(rawValue:)) ?? .onLoginOnly
 
         lightWallpaperIndex = normalizedIndex(lightWallpaperIndex, count: lightWallpapers.count)
         darkWallpaperIndex = normalizedIndex(darkWallpaperIndex, count: darkWallpapers.count)
+        configureRotationTimer()
     }
 
     func applyWallpaper(isDark: Bool) {
@@ -106,6 +164,25 @@ final class WallpaperCoordinator {
         defaults.set(darkWallpapers.map(\.absoluteString), forKey: DefaultsKey.darkWallpapers)
         defaults.set(lightWallpaperIndex, forKey: DefaultsKey.lightWallpaperIndex)
         defaults.set(darkWallpaperIndex, forKey: DefaultsKey.darkWallpaperIndex)
+        defaults.set(rotateWallpaper, forKey: DefaultsKey.rotateWallpaper)
+        defaults.set(rotationInterval.rawValue, forKey: DefaultsKey.rotationInterval)
+    }
+
+    private func configureRotationTimer() {
+        rotationTimer?.invalidate()
+        rotationTimer = nil
+
+        guard rotateWallpaper, let interval = rotationInterval.timeInterval else {
+            return
+        }
+
+        rotationTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.applyWallpaper(isDark: Self.resolveIsDarkMode())
+        }
+    }
+
+    private static func resolveIsDarkMode() -> Bool {
+        NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
     }
 
     private func applyWallpaperToAllSpaces(_ wallpaperURL: URL) {
