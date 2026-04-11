@@ -33,6 +33,8 @@ final class MenuBarController: NSObject {
 
     private func makeMenu() -> NSMenu {
         let menu = NSMenu()
+        
+
 
         menu.addItem(NSMenuItem(
             title: "Set wallpaper now",

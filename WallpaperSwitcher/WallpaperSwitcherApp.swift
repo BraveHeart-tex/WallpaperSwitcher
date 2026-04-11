@@ -20,8 +20,13 @@ struct WallpaperSwitcherApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuBarController: MenuBarController?
+    private var appearanceMonitor: AppearanceMonitor?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         menuBarController = MenuBarController()
+        appearanceMonitor = AppearanceMonitor { isDarkMode in
+            let appearance = isDarkMode ? "dark" : "light"
+            print("Appearance changed to: \(appearance)")
+        }
     }
 }
