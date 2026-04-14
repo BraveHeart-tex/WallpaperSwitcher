@@ -91,6 +91,8 @@ final class WallpaperCoordinator {
     private let defaults: UserDefaults
     private let dockDesktopPictureDatabaseURL: URL
     private var rotationTimer: Timer?
+    private var screenParametersObserver: NSObjectProtocol?
+    private var screenParametersDebounceWorkItem: DispatchWorkItem?
 
     private enum DefaultsKey {
         static let lightWallpapers = "WallpaperCoordinator.lightWallpapers"
@@ -117,6 +119,16 @@ final class WallpaperCoordinator {
         lightWallpaperIndex = normalizedIndex(lightWallpaperIndex, count: lightWallpapers.count)
         darkWallpaperIndex = normalizedIndex(darkWallpaperIndex, count: darkWallpapers.count)
         configureRotationTimer()
+        configureScreenParametersObserver()
+    }
+
+    deinit {
+        if let screenParametersObserver {
+            NotificationCenter.default.removeObserver(screenParametersObserver)
+        }
+
+        screenParametersDebounceWorkItem?.cancel()
+        rotationTimer?.invalidate()
     }
 
     func applyWallpaper(isDark: Bool) {
@@ -179,6 +191,27 @@ final class WallpaperCoordinator {
         rotationTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             self?.applyWallpaper(isDark: Self.resolveIsDarkMode())
         }
+    }
+
+    private func configureScreenParametersObserver() {
+        screenParametersObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.scheduleScreenParametersWallpaperRefresh()
+        }
+    }
+
+    private func scheduleScreenParametersWallpaperRefresh() {
+        screenParametersDebounceWorkItem?.cancel()
+
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.applyWallpaper(isDark: AppearanceMonitor.shared.isDarkMode)
+        }
+
+        screenParametersDebounceWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: workItem)
     }
 
     private static func resolveIsDarkMode() -> Bool {
