@@ -151,7 +151,9 @@ private struct WallpaperSectionView: View {
 
     @State private var selectedWallpapers: Set<URL> = []
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
+    private let columns = [
+        GridItem(.adaptive(minimum: 160), spacing: 12)
+    ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -165,11 +167,13 @@ private struct WallpaperSectionView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
 
             ScrollView {
-                LazyVGrid(columns: columns, spacing: 10) {
+                LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(wallpapers, id: \.self) { wallpaper in
-                        WallpaperThumbnailView(
+                        WallpaperCardView(
                             url: wallpaper,
                             isSelected: selectedWallpapers.contains(wallpaper)
                         )
@@ -178,6 +182,7 @@ private struct WallpaperSectionView: View {
                         }
                     }
                 }
+                .padding(.horizontal, 20)
                 .padding(.vertical, 2)
             }
             .overlay {
@@ -244,39 +249,59 @@ private struct WallpaperSectionView: View {
     }
 }
 
-private struct WallpaperThumbnailView: View {
+private struct WallpaperCardView: View {
     let url: URL
     let isSelected: Bool
 
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            if let image = NSImage(contentsOf: url) {
-                Image(nsImage: image)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                Rectangle()
-                    .fill(Color.secondary.opacity(0.12))
-                    .overlay {
-                        Image(systemName: "photo")
-                            .font(.title3)
-                            .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 6) {
+            thumbnail
+                .overlay(alignment: .topTrailing) {
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(5)
+                            .background(Color.blue)
+                            .clipShape(Circle())
+                            .padding(6)
                     }
-            }
+                }
 
             Text(url.deletingPathExtension().lastPathComponent)
-                .font(.caption2)
+                .font(.system(size: 11))
+                .foregroundStyle(Color.gray)
                 .lineLimit(1)
-                .padding(6)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.regularMaterial)
+                .padding(.horizontal, 6)
+                .padding(.bottom, 6)
         }
-        .aspectRatio(1, contentMode: .fit)
+        .frame(width: 160, alignment: .leading)
+        .background(Color(nsColor: .controlBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.18), lineWidth: isSelected ? 3 : 1)
+                .stroke(isSelected ? Color.blue : Color.secondary.opacity(0.18), lineWidth: isSelected ? 2 : 1)
         }
         .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    @ViewBuilder private var thumbnail: some View {
+        if let image = NSImage(contentsOf: url) {
+            Image(nsImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 160, height: 90)
+                .clipped()
+        } else {
+            Rectangle()
+                .fill(Color.secondary.opacity(0.12))
+                .frame(width: 160, height: 90)
+                .overlay {
+                    Image(systemName: "photo")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+        }
     }
 }
